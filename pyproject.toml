@@ -1,0 +1,81 @@
+[tool.poetry]
+name = "streamlit-ml-dashboard"
+version = "0.1.0"
+description = "A streamlit test app"
+authors = [ "Sam McKelvie <dev@mckelvie.org>" ]
+license = "MIT"
+keywords = [ "streamlit", "aws", "stepfunction", "stepfunctions" ]
+readme = "README.md"
+homepage = "https://amigos-dev/streamlit-ml-dashboard"
+repository = "https://github.com/amigos-dev/streamlit-ml-dashboard.git"
+
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.9.7 || >3.9.7,<4.0"
+streamlit = "^1.13.0"
+python-dotenv = "^0.21.0"
+
+[tool.poetry.dev-dependencies]
+mypy = "^0.931"
+dunamai = "^1.9.0"
+python-semantic-release = "^7.25.2"
+pylint = "^2.13.9"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+
+[tool.semantic_release]
+version_variable = 'streamlit_ml_dashboard/version.py:__version__'
+version_toml = 'pyproject.toml:tool.poetry.version'
+branch = 'main'
+upload_to_pypi = false
+upload_to_release = true
+build_command = "pip install poetry && poetry build"
+
+[tool.pylint.'MESSAGES CONTROL']
+disable=[
+    "wrong-import-order",
+    "duplicate-code",
+    "too-many-arguments",
+    "missing-function-docstring",
+    "import-outside-toplevel",
+    "too-few-public-methods",
+    "missing-class-docstring",
+    "unused-import",
+    "too-many-locals",
+    "unused-argument",
+    "invalid-name",
+    "no-self-use",
+    "global-statement",
+    "broad-except",
+    "too-many-branches",
+    "too-many-statements",
+    "exec-used",
+    "ungrouped-imports",
+    "subprocess-popen-preexec-fn",
+    "multiple-statements",
+    "too-many-public-methods",
+    "missing-module-docstring",
+    "too-many-instance-attributes",
+    "too-many-nested-blocks",
+    "unneeded-not",
+    "unnecessary-lambda",
+    "too-many-lines",
+    "too-many-boolean-expressions",
+  ]
+
+[tool.pylint.MASTER]
+ignore=[
+    ".venv",
+    "trash"
+  ]
+
+[tool.pylint.FORMAT]
+indent-after-paren=4
+indent-string='  '
+max-line-length=200
+indent=2
+
