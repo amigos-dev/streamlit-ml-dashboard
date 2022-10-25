@@ -13,8 +13,10 @@ COGNITO_DOMAIN = os.environ.get("COGNITO_DOMAIN") or "https://amigos-users.auth.
 CLIENT_ID = os.environ.get("CLIENT_ID")
 CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
 APP_URI = os.environ.get("APP_URI") or "http://localhost:8501/"
-
 ESCAPED_APP_URI = urllib.parse.quote(APP_URI.encode('utf8'))
+
+USE_IFRAME_LOGIN = '.streamlitapp.com/' in APP_URI
+#USE_IFRAME_LOGIN = True
 
 DEBUG = 'localhost' in APP_URI
 
@@ -310,7 +312,12 @@ def button_login():
     Returns:
         Html of the login button.
     """
-    return st.sidebar.markdown(f"{html_button_login}", unsafe_allow_html=True)
+    if USE_IFRAME_LOGIN:
+        if st.sidebar.button('Log In'):
+            st.warning(f'Login is not seamlessly supported on this host because the streamlit app is running in an iframe. '
+                       f'To login, copy and paste this link into your browser address bar:\n\n{login_link}')
+    else:
+        st.sidebar.markdown(f"{html_button_login}", unsafe_allow_html=True)
 
 
 def button_logout():
@@ -319,8 +326,12 @@ def button_logout():
     Returns:
         Html of the logout button.
     """
-    #clear_login_cache()
-    return st.sidebar.markdown(f"{html_button_logout}", unsafe_allow_html=True)
+    if USE_IFRAME_LOGIN:
+        if st.sidebar.button('Log Out'):
+            st.warning(f'Logout is not seamlessly supported on this host because the streamlit app is running in an iframe. '
+                       f'To log out, copy and paste this link into your browser address bar:\n\n{logout_link}')
+    else:
+        st.sidebar.markdown(f"{html_button_logout}", unsafe_allow_html=True)
 
 def auth_ui():
     email = get_user_email()
