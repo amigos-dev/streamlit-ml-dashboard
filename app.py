@@ -1,20 +1,22 @@
+import sys
+
+print("app.py is loading", file=sys.stderr)
+
 import streamlit as st
 import time
-import sys
 import json
-from streamlit_ml_dashboard import authenticate
+from streamlit_cognito_auth import cognito_auth
 
-authenticate.set_st_state_vars()
+auth = cognito_auth().update()
 
-# Add login/logout buttons
-authenticate.auth_ui()
+auth.button()
 
+st.write(f"ID token payload={json.dumps(auth.id_token_payload)}")
+st.write(f"user_info={json.dumps(auth.get_user_info())}")
 
-st.write(f'login_link="{authenticate.login_link}"')
+auth.require_verified()
 
-st.write(f"user_info={json.dumps(authenticate.get_user_info(), sort_keys=True, indent=2)}")
-st.write(f"id_token_payload={json.dumps(authenticate.get_id_token_payload(), sort_keys=True, indent=2)}")
-st.write(f"cognito_groups={json.dumps(authenticate.get_user_cognito_groups(), sort_keys=True, indent=2)}")
+st.info(f"Yay! You are logged in to verified email address {auth.user_email}, and are in these Cognito groups: {auth.cognito_groups}")
 
 st.sidebar.text_input(
     'Prompt',
@@ -43,3 +45,5 @@ if st.sidebar.button('Run', help="Press to run the job"):
   ]
 
   st.image(image_list)
+
+print("app.py is done loading", file=sys.stderr)
