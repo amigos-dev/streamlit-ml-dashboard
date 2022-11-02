@@ -1,3 +1,4 @@
+from operator import add
 import sys
 
 print("app.py is reloading", file=sys.stderr)
@@ -90,10 +91,23 @@ default_script_text = """#!/bin/bash
 jq . < input/task_data.json
 export PROMPT="$(jq -r .prompt < input/task_data.json)"
 export SEED="$(jq -r .seed < input/task_data.json)"
-export N_SAMPLES="$(jq -r .seed < input/task_data.json)"
+export N_SAMPLES="$(jq -r .n_samples < input/task_data.json)"
 export
 curl https://i.redd.it/tospo6k2u9l81.png  -o output/result.png
 find .
+"""
+
+default_script_text = """#!/bin/bash
+export PROMPT="$(jq -r .prompt < input/task_data.json)"
+export SEED="$(jq -r .seed < input/task_data.json)"
+export N_SAMPLES="$(jq -r .n_samples < input/task_data.json)"
+TASK_DIR="$(pwd)"
+cd ../..
+rm -fr ./outputs/txt2img-samples
+python3 scripts/txt2img.py \
+  --prompt "$PROMPT" \
+  --n_samples "$N_SAMPLES" --n_iter 1 --plms
+rsync -a ./outputs/txt2img-samples/samples/ "$TASK_DIR/output/"
 """
 
 script_text = st.sidebar.text_area(
@@ -102,6 +116,17 @@ script_text = st.sidebar.text_area(
     placeholder='Bash script contents...',
     help="The script command(s) to run on the worker"
   )
+
+default_additional_params = """{ }
+"""
+
+additional_params = st.sidebar.text_area(
+    'Additional parameters',
+    value=default_additional_params,
+    placeholder="""JSON; e.g.: { "keep_task_dir": true }""",
+    help="A JSON opject with key/value pairs to send as job params"
+  )
+
 
 submit_result = None
 submit_attempted = False
@@ -115,6 +140,8 @@ if run_button_pressed:
       api.upload_job_input_files(uploaded_files)
   with st.spinner("Submitting job..."):
     data = dict(script=script_text, prompt=prompt, n_samples=n_samples, seed=seed)
+    if additional_params.strip() != '':
+      data.update(json.loads(additional_params))
     try:
       submit_attempted = True
       submit_result = api.start_job(data=data, worker_name=worker_name)
@@ -130,6 +157,7 @@ elif not jobid is None:
   st.info(f"Job ID={jobid}")
 
 job_result = None
+job_output = {}
 if not jobid is None and not submit_failed:
   with st.spinner("Waiting for job to finish..."):
     with st.empty():
@@ -142,9 +170,27 @@ if not jobid is None and not submit_failed:
       if job_result is None:
         st.error('Could not get job result')
       else:
-        with st.expander(f"Job {job_result.get('status', 'ended without status')}", expanded=False):
-          st.text(json.dumps(job_result, indent=2, sort_keys=True))
-    
+        job_status = job_result.get('status', None)
+        job_output_str = job_result.get('output', "{}")
+        job_output = json.loads(job_output_str)
+        job_error = None
+        if job_status is None:
+          job_summary = "Job completed without status"
+        elif job_status == 'SUCCEEDED':
+          if 'JobError' in job_output:
+            job_error = job_output['JobError']
+            error_message = job_error.get('Error', 'Unspecified error')
+            job_summary = f"Job completed with job error: {error_message}"
+        elif job_status == 'FAILED':
+          job_sumary = "Job FAILED"
+        else:
+          job_summary = f"Job completed with status {job_status}"
+        with st.expander(job_summary, expanded=False):
+          st.text("job_result = " + json.dumps(job_result, indent=2, sort_keys=True))
+
+  if len(job_output) > 0:
+    with st.expander("Job output", expanded=True):
+      st.text("job_output = " + json.dumps(job_output, indent=2, sort_keys=True))
 
   #logger.info('getting output file list')
   output_infos = api.get_job_outputs_metadata()
