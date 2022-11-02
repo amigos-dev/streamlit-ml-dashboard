@@ -181,6 +181,8 @@ if not jobid is None and not submit_failed:
             job_error = job_output['JobError']
             error_message = job_error.get('Error', 'Unspecified error')
             job_summary = f"Job completed with job error: {error_message}"
+          else:
+            job_summary = "Job SUCCEEDED"
         elif job_status == 'FAILED':
           job_sumary = "Job FAILED"
         else:
