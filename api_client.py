@@ -245,4 +245,13 @@ class SfnApi:
         max_wait_seconds=max_wait_seconds
       )
     return result
-  
+
+  def stop_job(
+        self,
+      ) -> JsonableDict:
+    jobid = self.require_jobid()
+    result = self.invoke_post(
+        'stop-job',
+        jobid=jobid,
+      )
+    return result

@@ -6,25 +6,12 @@
     "configurations": [
 
         {
-            "name": "file-collection-hash in scripts",
+            "name": "streamlit run --logger.level debug app.py",
             "type": "python",
             "request": "launch",
-            "module": "file-collection-hash",
-            "args": [ ]
-        },
-        {
-            "name": "secret-kv create",
-            "type": "python",
-            "request": "launch",
-            "module": "secret_kv",
-            "args": [ "-p", "passw0rd", "create", "." ]
-        },
-        {
-            "name": "secret-kv --tb -r get y",
-            "type": "python",
-            "request": "launch",
-            "module": "secret_kv",
-            "args": [ "--tb", "-r", "get", "y" ]
+            "module": "streamlit",
+            "args": [ "run", "--logger.level", "debug", "app.py" ],
+            "justMyCode": false
         }
     ]
 }

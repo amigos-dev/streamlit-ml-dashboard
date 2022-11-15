@@ -1,7 +1,6 @@
 from operator import add
 import sys
 
-print("app.py is reloading", file=sys.stderr)
 
 import os
 import streamlit as st
@@ -12,7 +11,9 @@ import mimetypes
 from api_client import SfnApi, ApiError
 from streamlit_cognito_auth import logger
 import logging
+
 logger = logging.getLogger(__name__)
+logger.debug("app.py is reloading")
 
 def url_download_hyperlink(label, url, filename=None, content_type=None):
   if filename is None:
@@ -50,9 +51,9 @@ st.markdown(
 auth.button()
 st.sidebar.markdown("""---""")
 
-auth.require_verified()
+auth.require_verified_cognito_group('approved')
 
-st.info(f"Yay! You are logged in to verified email address {auth.user_email}, and are in these Cognito groups: {auth.cognito_groups}")
+st.info(f"Yay! You are logged in to verified email address {auth.user_email}, and are in Cognito group 'approved'.")
 #st.text(f"API info={json.dumps(api.api_info, indent=2, sort_keys=True)}")
 
 jobid = api.jobid
@@ -61,6 +62,25 @@ worker_names = api.worker_names
 default_worker_name = api.default_worker_name
 
 run_button_pressed = st.sidebar.button('Run', help="Press to run the job")
+
+
+def handle_stop():
+  logger.info('STOP button was clicked (onclick)')
+  result = api.stop_job()
+  logger.info(f'Result of stop-job: {json.dumps(result, sort_keys=True)}')
+
+stop_holder = st.sidebar.empty()
+
+stop_button_enabled = True
+stop_button_iter = 0
+def enable_stop_button(enabled):
+  global stop_button_enabled, stop_button_iter
+  if enabled != stop_button_enabled:
+    stop_holder.button('Stop', help="Press to abort the job", on_click=handle_stop, disabled=not enabled, key=f'stop_button_{stop_button_iter}')
+    stop_button_enabled = enabled
+    stop_button_iter += 1
+
+enable_stop_button(False)
 
 i_default_worker = 0 if default_worker_name is None else worker_names.index(default_worker_name)
 mdf = st.sidebar.radio if len(worker_names) <= 12 else st.sidebar.selectbox
@@ -148,6 +168,7 @@ if run_button_pressed:
     except ApiError as e:
       submit_failed = True
       st.text(f"Job submission failed: {e}")
+  enable_stop_button(True)
 
 if not submit_result is None:
   with st.expander("Job submitted", expanded=False):
@@ -165,12 +186,13 @@ if not jobid is None and not submit_failed:
       while job_result is None or job_result.get('status', '') == 'RUNNING':
         i += 1
         st.info(f'... Long polling for job completion [{i}]')
-        job_result = api.get_job_result()
-
+        job_result = api.get_job_result(max_wait_seconds=2)
       if job_result is None:
         st.error('Could not get job result')
       else:
         job_status = job_result.get('status', None)
+        if job_status == "RUNNING":
+          enable_stop_button(True)
         job_output_str = job_result.get('output', "{}")
         job_output = json.loads(job_output_str)
         job_error = None
@@ -216,4 +238,4 @@ if not jobid is None and not submit_failed:
     with st.expander("Output images:", expanded=True):
       st.image(image_list)
 
-print("app.py is done loading", file=sys.stderr)
+logger.debug("app.py is done loading")
