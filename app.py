@@ -82,6 +82,9 @@ def enable_stop_button(enabled):
 
 enable_stop_button(False)
 
+if 'SamMacbook' in worker_names:
+  default_worker_name = 'SamMacbook'
+
 i_default_worker = 0 if default_worker_name is None else worker_names.index(default_worker_name)
 mdf = st.sidebar.radio if len(worker_names) <= 12 else st.sidebar.selectbox
 worker_name = mdf(
@@ -97,7 +100,7 @@ prompt = st.sidebar.text_area(
     help="The descriptive text that stable diffusion will use to generate images"
   )
 
-n_samples = st.sidebar.slider('Number of samples', min_value=1, max_value=10, value=4, help="The number of images to generate")
+n_samples = st.sidebar.slider('Number of samples', min_value=1, max_value=10, value=1, help="The number of images to generate")
 
 seed = st.sidebar.number_input('Seed', min_value=0, max_value=65535, value=1024, help="The random seed for generation")
 
@@ -107,27 +110,19 @@ uploaded_files = st.sidebar.file_uploader("Upload Input Files", accept_multiple_
 st.sidebar.markdown("""---""")
 st.sidebar.header("Advanced")
 
-default_script_text = """#!/bin/bash
-jq . < input/task_data.json
-export PROMPT="$(jq -r .prompt < input/task_data.json)"
-export SEED="$(jq -r .seed < input/task_data.json)"
-export N_SAMPLES="$(jq -r .n_samples < input/task_data.json)"
-export
-curl https://i.redd.it/tospo6k2u9l81.png  -o output/result.png
-find .
-"""
-
-default_script_text = """#!/bin/bash
-export PROMPT="$(jq -r .prompt < input/task_data.json)"
-export SEED="$(jq -r .seed < input/task_data.json)"
-export N_SAMPLES="$(jq -r .n_samples < input/task_data.json)"
+default_script_text = """PROMPT="$(jq -r .prompt < input/task_data.json)"
+SEED="$(jq -r .seed < input/task_data.json)"
+N_SAMPLES="$(jq -r .n_samples < input/task_data.json)"
 TASK_DIR="$(pwd)"
 cd ../..
-rm -fr ./outputs/txt2img-samples
+rm -fr ./outputs/txt2img-samples/
 python3 scripts/txt2img.py \
   --prompt "$PROMPT" \
-  --n_samples "$N_SAMPLES" --n_iter 1 --plms
-rsync -a ./outputs/txt2img-samples/samples/ "$TASK_DIR/output/"
+  --n_samples "$N_SAMPLES" \
+  --n_iter 1 \
+  --skip_grid \
+  --plms \
+  --outdir "$TASK_DIR/output"
 """
 
 script_text = st.sidebar.text_area(
